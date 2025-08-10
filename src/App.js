@@ -2,11 +2,24 @@ import React from 'react';
 import ChatList from './component/ChatList';
 import ChatWindow from './component/ChatWindow';
 import WelcomeScreen from './component/WelcomeScreen';
+import AuthScreen from './component/AuthScreen';
+import LoadingScreen from './component/loadingScreen';
 import { useChat } from './hooks/useChat';
 import { useResponsive } from './hooks/useResponsive';
+import { useAuth } from './hooks/useAuth';
 import { initialChats } from './data/mockData';
 
 const App = () => {
+  const { 
+    user, 
+    isAuthenticated, 
+    isLoading, 
+    error: authError,
+    signup, 
+    login, 
+    clearError 
+  } = useAuth();
+  
   const {
     chats,
     selectedChat,
@@ -26,6 +39,40 @@ const App = () => {
     selectChat(null);
     closeSidebar();
   };
+
+  const handleSignup = async (userData) => {
+    const result = await signup(userData);
+    if (result.success) {
+      console.log('Signup successful:', result.message);
+    }
+    // Errors are handled by useAuth hook
+  };
+
+  const handleLogin = async (credentials) => {
+    const result = await login(credentials);
+    if (result.success) {
+      console.log('Login successful:', result.message);
+    }
+    // Errors are handled by useAuth hook
+  };
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  // Show auth screen if user is not authenticated
+  if (!isAuthenticated) {
+    return (
+      <AuthScreen 
+        onSignup={handleSignup}
+        onLogin={handleLogin}
+        authError={authError}
+        clearAuthError={clearError}
+        isLoading={isLoading}
+      />
+    );
+  }
 
   const styles = {
     container: {
@@ -91,7 +138,7 @@ const App = () => {
             onClick={closeSidebar}
           />
         )}
-        
+                
         {/* Chat List - Left Side */}
         <div 
           style={styles.chatListContainer}
@@ -103,9 +150,10 @@ const App = () => {
             onSelectChat={selectChat}
             isVisible={sidebarVisible}
             onClose={closeSidebar}
+            currentUser={user} // Pass current user data
           />
         </div>
-        
+                
         {/* Main Content - Right Side */}
         <div 
           style={styles.mainContent}
@@ -118,9 +166,13 @@ const App = () => {
               onBackClick={handleBackClick}
               onMenuClick={openSidebar}
               isVisible={!sidebarVisible || !isMobile}
+              currentUser={user} // Pass current user data
             />
           ) : (
-            <WelcomeScreen onMenuClick={openSidebar} />
+            <WelcomeScreen 
+              onMenuClick={openSidebar} 
+              user={user} // Pass user data to welcome screen
+            />
           )}
         </div>
       </div>
