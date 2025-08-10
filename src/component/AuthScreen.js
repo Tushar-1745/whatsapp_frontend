@@ -5,10 +5,13 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
   const [countryCode, setCountryCode] = useState('+91');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -24,6 +27,16 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
     // Clear errors when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
+    // Clear confirm password error if passwords now match
+    if (name === 'password' || name === 'confirmPassword') {
+      if (name === 'password' && formData.confirmPassword && value === formData.confirmPassword) {
+        setErrors(prev => ({ ...prev, confirmPassword: '' }));
+      }
+      if (name === 'confirmPassword' && value === formData.password) {
+        setErrors(prev => ({ ...prev, confirmPassword: '' }));
+      }
     }
     
     if (authError) {
@@ -55,6 +68,15 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    // Confirm password validation (only for signup)
+    if (!isLoginMode) {
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
     }
 
     setErrors(newErrors);
@@ -89,9 +111,12 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
     setFormData({
       name: '',
       mobile: '',
-      password: ''
+      password: '',
+      confirmPassword: ''
     });
     setErrors({});
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     if (authError) {
       clearAuthError();
     }
@@ -223,6 +248,31 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
       transition: 'border-color 0.2s',
       boxSizing: 'border-box'
     },
+    passwordContainer: {
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center'
+    },
+    passwordInput: {
+      width: '100%',
+      padding: '12px 45px 12px 16px',
+      border: '1px solid #d1d7db',
+      borderRadius: '4px',
+      fontSize: '16px',
+      outline: 'none',
+      transition: 'border-color 0.2s',
+      fontFamily: 'inherit',
+      boxSizing: 'border-box'
+    },
+    eyeIcon: {
+      position: 'absolute',
+      right: '12px',
+      cursor: 'pointer',
+      fontSize: '18px',
+      color: '#667781',
+      userSelect: 'none',
+      zIndex: 1
+    },
     error: {
       color: '#f15c6d',
       fontSize: '12px',
@@ -299,6 +349,10 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
             background-color: #017561 !important;
           }
           
+          .eye-icon:hover {
+            color: #00a884 !important;
+          }
+          
           @media (max-width: 768px) {
             .auth-container {
               flex-direction: column !important;
@@ -353,7 +407,7 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
               </div>
             )}
 
-            <form style={styles.form} onSubmit={handleSubmit}>
+            <div style={styles.form}>
               {/* Name field - only for signup */}
               {!isLoginMode && (
                 <div style={styles.inputGroup}>
@@ -414,25 +468,66 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
               {/* Password field */}
               <div style={styles.inputGroup}>
                 <label style={styles.label} htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  style={{
-                    ...styles.input,
-                    ...(errors.password ? styles.inputError : {})
-                  }}
-                  className="auth-input"
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
+                <div style={styles.passwordContainer}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    style={{
+                      ...styles.passwordInput,
+                      ...(errors.password ? styles.inputError : {})
+                    }}
+                    className="auth-input"
+                    placeholder="Enter your password"
+                    disabled={isLoading}
+                  />
+                  <span 
+                    style={styles.eyeIcon}
+                    className="eye-icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </span>
+                </div>
                 {errors.password && <span style={styles.error}>{errors.password}</span>}
               </div>
 
+              {/* Confirm Password field - only for signup */}
+              {!isLoginMode && (
+                <div style={styles.inputGroup}>
+                  <label style={styles.label} htmlFor="confirmPassword">Confirm Password</label>
+                  <div style={styles.passwordContainer}>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      style={{
+                        ...styles.passwordInput,
+                        ...(errors.confirmPassword ? styles.inputError : {})
+                      }}
+                      className="auth-input"
+                      placeholder="Confirm your password"
+                      disabled={isLoading}
+                    />
+                    <span 
+                      style={styles.eyeIcon}
+                      className="eye-icon"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                    </span>
+                  </div>
+                  {errors.confirmPassword && <span style={styles.error}>{errors.confirmPassword}</span>}
+                </div>
+              )}
+
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={isLoading}
                 style={{
                   ...styles.button,
@@ -449,7 +544,7 @@ const AuthScreen = ({ onSignup, onLogin, authError, clearAuthError, isLoading })
                   isLoginMode ? 'Sign In' : 'Create Account'
                 )}
               </button>
-            </form>
+            </div>
 
             <div style={styles.toggleContainer}>
               <p style={styles.toggleText}>
